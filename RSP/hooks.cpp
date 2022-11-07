@@ -18,7 +18,7 @@ static int unprotect(void* address, size_t size)
 {
     DWORD old_flags;
     BOOL result = VirtualProtect(address, size, PAGE_EXECUTE_READWRITE, &old_flags);
-    return !result;
+    return true == result;
 }
 
 static uint8_t nops[] =
@@ -117,34 +117,24 @@ void HookManager::plantRomClosed()
     writeCall(0x0041F2FE, 0x0041F33E - 0x0041F2FE + 2, &hookMachine_LoadStateRomReinit);
 }
 
+#define INVOKE_PJ64_PLUGIN_CALLBACK(name) if (auto fn = PJ64::Globals::name()) { fn(); }
+
 void HookManager::hookCloseCpuRomClosed()
 {
-    auto gfxRomClosed = GfxRomClosed();
-    auto aiRomClosed = AiRomClosed();
-    auto contRomClosed = ContRomClosed();
-    auto rspRomClosed = RSPRomClosed();
-
-    if (gfxRomClosed) gfxRomClosed();
-    if (aiRomClosed) aiRomClosed();
-    if (contRomClosed) contRomClosed();
-    if (rspRomClosed) rspRomClosed();
+    INVOKE_PJ64_PLUGIN_CALLBACK(GfxRomClosed)
+    INVOKE_PJ64_PLUGIN_CALLBACK(AiRomClosed)
+    INVOKE_PJ64_PLUGIN_CALLBACK(ContRomClosed)
+    INVOKE_PJ64_PLUGIN_CALLBACK(RSPRomClosed)
 }
 
 void HookManager::hookMachine_LoadStateRomReinit()
 {
-    auto gfxRomClosed = GfxRomClosed();
-    auto aiRomClosed = AiRomClosed();
-    auto contRomClosed = ContRomClosed();
-    auto rspRomClosed = RSPRomClosed();
-    auto gfxRomOpen = GfxRomOpen();
-    auto contRomOpen = ContRomOpen();
-
-    // if (gfxRomClosed) gfxRomClosed();
-    // if (aiRomClosed) aiRomClosed();
-    // if (contRomClosed) contRomClosed();
-    if (rspRomClosed) rspRomClosed();
-    // if (gfxRomOpen) gfxRomOpen();
-    // if (contRomOpen) contRomOpen();
+    // INVOKE_PJ64_PLUGIN_CALLBACK(GfxRomClosed)
+    // INVOKE_PJ64_PLUGIN_CALLBACK(AiRomClosed)
+    // INVOKE_PJ64_PLUGIN_CALLBACK(ContRomClosed)
+    INVOKE_PJ64_PLUGIN_CALLBACK(RSPRomClosed)
+    // INVOKE_PJ64_PLUGIN_CALLBACK(GfxRomOpen)
+    // INVOKE_PJ64_PLUGIN_CALLBACK(ContRomOpen)
 }
 
 // MARK: Enterance from 'RSP' init
@@ -154,8 +144,8 @@ void plantHooks()
     __try
     {
         ok = true;
-        ok = !ok ? ok : SetWindowText(MainWindow(), NAME);
-        ok = !ok ? ok : SetWindowText(HiddenWin(), NAME);
+        ok = !ok ? ok : SetWindowText(PJ64::Globals::MainWindow(), NAME);
+        ok = !ok ? ok : SetWindowText(PJ64::Globals::HiddenWin(), NAME);
     }
     __except(EXCEPTION_EXECUTE_HANDLER)
     {
