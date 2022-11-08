@@ -4,6 +4,8 @@
 
 namespace PJ64
 {
+	struct Timer;
+
 	namespace Globals
 	{
 		static inline HWND MainWindow()
@@ -61,6 +63,21 @@ namespace PJ64
 		static inline RomClosedFn RSPRomClosed()
 		{
 			return *(RomClosedFn*)0x004D7FB8;
+		}
+
+		static Timer* FPSTimer()
+		{
+			return (Timer*)0x0046BD00;
+		}
+
+		static HANDLE hCPU()
+		{
+			return *(HANDLE*) 0x004D75EC;
+		}
+
+		static DWORD CPU_Type()
+		{
+			return *(DWORD*) 0x4D7F70;
 		}
 	}
 }

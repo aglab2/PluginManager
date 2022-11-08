@@ -21,6 +21,12 @@
     <ClCompile Include="hooks.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="timer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="reset_recognizer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Rsp #1.1.h">
@@ -29,13 +35,19 @@
     <ClInclude Include="xmacro.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="pj64.h">
+    <ClInclude Include="pj64_globals.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="hooks.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="hooks_priv.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="timer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="reset_recognizer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
