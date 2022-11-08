@@ -9,7 +9,7 @@
 
 #include <Commctrl.h>
 
-#define NAME "LINK's Project64"
+constexpr char NAME[] = "LINK's Project64";
 
 static HookManager gHookManager;
 
