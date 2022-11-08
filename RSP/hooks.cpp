@@ -13,11 +13,6 @@
 
 static HookManager gHookManager;
 
-void HookManager::init()
-{
-    plantRomClosed();
-}
-
 static int unprotect(void* address, size_t size)
 {
     DWORD old_flags;
@@ -69,7 +64,7 @@ static void writeCall(uintptr_t codeStart, size_t sz, void* fn)
     doWriteCall(codeStart, sz, fn);
 }
 
-void HookManager::plantRomClosed()
+void HookManager::init()
 {
     /*
     CloseCpu
@@ -246,7 +241,7 @@ void HookManager::plantRomClosed()
     writeCall(0x00432EB4, 0x00432ECA - 0x00432EB4, &hookStartRecompiledCpuRomOpen);
 
     // hook create file just for debugging
-    *(uintptr_t*)0x467068 = (uintptr_t)&HookManager::hookCreateFileA;
+    // *(uintptr_t*)0x467068 = (uintptr_t)&HookManager::hookCreateFileA;
 }
 
 #define INVOKE_PJ64_PLUGIN_CALLBACK(name) if (auto fn = PJ64::Globals::name()) { fn(); }
@@ -284,18 +279,16 @@ void HookManager::hookMachine_LoadStateRomReinit()
     INVOKE_PJ64_PLUGIN_CALLBACK(RSPRomClosed)
     // INVOKE_PJ64_PLUGIN_CALLBACK(GfxRomOpen)
     // INVOKE_PJ64_PLUGIN_CALLBACK(ContRomOpen)
+
+    // Fix for the stutters
     PJ64::Globals::FPSTimer()->reset();
 }
 
 void __stdcall HookManager::hookCloseCpu(DWORD* ExitCode)
 {
-    WaitForSingleObject(PJ64::Globals::hCPU(), 100);
-    GetExitCodeThread(PJ64::Globals::hCPU(), ExitCode);
-}
-
-static VOID CALLBACK hookSendAsyncProc(HWND, UINT, ULONG_PTR, LRESULT)
-{
-//    wakeupPromise();
+    HANDLE hCPU = PJ64::Globals::hCPU();
+    WaitForSingleObject(hCPU, 100);
+    GetExitCodeThread(hCPU, ExitCode);
 }
 
 #define LINE_LENGTH 128
@@ -308,29 +301,18 @@ LRESULT WINAPI HookManager::hookSendMessageA(HWND hWnd, UINT Msg, WPARAM wParam,
     DWORD curThreadId = GetCurrentThreadId();
     if (hCPUId == curThreadId)
     {
-#if 0
-        std::future<void> future;
-        {
-            std::lock_guard<std::mutex> lck(gFutureMutex);
-            gPromise = std::promise<void>();
-            future = gPromise.get_future();
-        }
-        SendMessageCallbackA(hWnd, Msg, wParam, lParam, hookSendAsyncProc, NULL);
-        future.wait();
-#else
         if (Msg == SB_SETTEXT)
         {
             char* line = &sContent[LINE_LENGTH * (sContentCycle % LINE_CNT)];
             sContentCycle++;
             strncpy_s(line, LINE_LENGTH, (char*)lParam, LINE_LENGTH);
             ::PostMessageA(hWnd, Msg, wParam, (LPARAM)line);
+            return 0;
         }
         else
         {
-            ::SendMessageA(hWnd, Msg, wParam, lParam);
+            return ::SendMessageA(hWnd, Msg, wParam, lParam);
         }
-        return 0;
-#endif
     }
     else
     {

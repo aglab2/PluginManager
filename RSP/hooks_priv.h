@@ -12,7 +12,6 @@ public:
 private:
     void romClosed(bool fromSavestate);
 
-    static void plantRomClosed();
     static void hookCloseCpuRomClosed();
     static void hookMachine_LoadStateRomReinit();
     static void hookStartRecompiledCpuRomOpen();
