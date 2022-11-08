@@ -347,6 +347,26 @@ HANDLE WINAPI HookManager::hookCreateFileA(LPCSTR lpFileName, DWORD dwDesiredAcc
 void plantHooks()
 {
     bool ok = false;
+    // Check if we are in PJ64 1.6, heuristically
+    {
+        constexpr int BacktraceCount = 10;
+        void* backtrace[BacktraceCount];
+        constexpr uintptr_t PJ64GetDllInfoSym = 0x0044dcf7;
+        int backtraceSize = CaptureStackBackTrace(0, BacktraceCount, backtrace, NULL);
+        for (int i = 0; i < backtraceSize; i++)
+        {
+            if ((uintptr_t) backtrace[i] == PJ64GetDllInfoSym)
+            {
+                ok = true;
+            }
+        }
+    }
+
+    if (!ok)
+    {
+        return;
+    }
+
     __try
     {
         ok = true;
