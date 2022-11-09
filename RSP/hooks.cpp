@@ -1,6 +1,7 @@
 #include "hooks.h"
 #include "hooks_priv.h"
 
+#include "minizip.h"
 #include "pj64_globals.h"
 #include "timer.h"
 #include "reset_recognizer.h"
@@ -58,10 +59,25 @@ static void doWriteCall(uintptr_t codeStart, size_t sz, void* fn)
     fillNop(hook + 5, sz - 5);
 }
 
+static void doWriteJump(uintptr_t codeStart, size_t sz, void* fn)
+{
+    uint8_t* hook = (uint8_t*)codeStart;
+    *hook = 0xE9;
+    *(uintptr_t*)(hook + 1) = (uintptr_t)(fn)-(uintptr_t)(hook + 5);
+
+    fillNop(hook + 5, sz - 5);
+}
+
 static void writeCall(uintptr_t codeStart, size_t sz, void* fn)
 {
     unprotect((void*)codeStart, sz);
     doWriteCall(codeStart, sz, fn);
+}
+
+static void writeJump(uintptr_t codeStart, size_t sz, void* fn)
+{
+    unprotect((void*)codeStart, sz);
+    doWriteJump(codeStart, sz, fn);
 }
 
 void HookManager::init()
@@ -242,6 +258,32 @@ void HookManager::init()
 
     // hook create file just for debugging
     // *(uintptr_t*)0x467068 = (uintptr_t)&HookManager::hookCreateFileA;
+
+    // Optimized unz
+    // call        0045CC98 - sprintf
+    // 0044A27D  je          0044A5DC - if (!Allocate_ROM())
+    // 0044A343  jne         0044A5F5 - if ((int)RomFileSize != len)
+    // 0044A118  or          ecx,0FFFFFFFFh  strcpy start
+    // 4AF0F0h - CurrentFileName
+ 
+    // 0044A175  call        00419FB0 - unzOpen
+    // 0044A1B9  call        0041AEE0 - unzGoToFirstFile
+    // 0044A203  call        0041A590 - unzGetCurrentFileInfo
+    // 0044A213  call        0041AFB0 - unzLocateFile
+    // 0044A224  call        0041B1A0 - unzOpenCurrentFile
+    // 0044A23C  call        0041B5C0 - unzReadCurrentFile
+    // 0044A5DD  call        0041B7B0 - unzCloseCurrentFile
+    // 0044A5E3  call        0041A520 - unzClose
+    // 0044A578  call        0041AF30 - unzGoToNextFile
+    writeJump(0x00419FB0, 5, unzOpen);
+    writeJump(0x0041AEE0, 5, unzGoToFirstFile);
+    writeJump(0x0041A590, 5, unzGetCurrentFileInfo);
+    writeJump(0x0041AFB0, 5, unzLocateFile);
+    writeJump(0x0041B1A0, 5, unzOpenCurrentFile);
+    writeJump(0x0041B5C0, 5, unzReadCurrentFile);
+    writeJump(0x0041B7B0, 5, unzCloseCurrentFile);
+    writeJump(0x0041A520, 5, unzClose);
+    writeJump(0x0041AF30, 5, unzGoToNextFile);
 }
 
 #define INVOKE_PJ64_PLUGIN_CALLBACK(name) if (auto fn = PJ64::Globals::name()) { fn(); }
