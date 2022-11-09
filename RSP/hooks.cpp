@@ -1,10 +1,12 @@
 #include "hooks.h"
 #include "hooks_priv.h"
 
+#include "backtrace.h"
 #include "minizip.h"
 #include "pj64_globals.h"
 #include "timer.h"
 #include "reset_recognizer.h"
+#include "unzdispatch.h"
 
 #include <stdint.h>
 
@@ -275,6 +277,7 @@ void HookManager::init()
     // 0044A5DD  call        0041B7B0 - unzCloseCurrentFile
     // 0044A5E3  call        0041A520 - unzClose
     // 0044A578  call        0041AF30 - unzGoToNextFile
+#if 0
     writeJump(0x00419FB0, 5, unzOpen);
     writeJump(0x0041AEE0, 5, unzGoToFirstFile);
     writeJump(0x0041A590, 5, unzGetCurrentFileInfo);
@@ -284,6 +287,18 @@ void HookManager::init()
     writeJump(0x0041B7B0, 5, unzCloseCurrentFile);
     writeJump(0x0041A520, 5, unzClose);
     writeJump(0x0041AF30, 5, unzGoToNextFile);
+#endif
+#if 1
+    writeJump(0x00419FB0, 5, unzDispatchOpen);
+    writeJump(0x0041AEE0, 5, unzDispatchGoToFirstFile);
+    writeJump(0x0041A590, 5, unzDispatchGetCurrentFileInfo);
+    writeJump(0x0041AFB0, 5, unzDispatchLocateFile);
+    writeJump(0x0041B1A0, 5, unzDispatchOpenCurrentFile);
+    writeJump(0x0041B5C0, 5, unzDispatchReadCurrentFile);
+    writeJump(0x0041B7B0, 5, unzDispatchCloseCurrentFile);
+    writeJump(0x0041A520, 5, unzDispatchClose);
+    writeJump(0x0041AF30, 5, unzDispatchGoToNextFile);
+#endif
 }
 
 #define INVOKE_PJ64_PLUGIN_CALLBACK(name) if (auto fn = PJ64::Globals::name()) { fn(); }
@@ -367,41 +382,43 @@ HANDLE WINAPI HookManager::hookCreateFileA(LPCSTR lpFileName, DWORD dwDesiredAcc
     return CreateFileA(lpFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
 }
 
-// MARK: Enterance from 'RSP' init
-void plantHooks()
+static bool tryNamePJ64() noexcept
 {
     bool ok = false;
-    // Check if we are in PJ64 1.6, heuristically
-    {
-        constexpr int BacktraceCount = 10;
-        void* backtrace[BacktraceCount];
-        constexpr uintptr_t PJ64GetDllInfoSym = 0x0044dcf7;
-        int backtraceSize = CaptureStackBackTrace(0, BacktraceCount, backtrace, NULL);
-        for (int i = 0; i < backtraceSize; i++)
-        {
-            if ((uintptr_t) backtrace[i] == PJ64GetDllInfoSym)
-            {
-                ok = true;
-            }
-        }
-    }
-
-    if (!ok)
-    {
-        return;
-    }
-
     __try
     {
         ok = true;
         ok = !ok ? ok : SetWindowText(PJ64::Globals::MainWindow(), NAME);
         ok = !ok ? ok : SetWindowText(PJ64::Globals::HiddenWin(), NAME);
     }
-    __except(EXCEPTION_EXECUTE_HANDLER)
+    __except (EXCEPTION_EXECUTE_HANDLER)
     {
         // not ok
-        return;
+        return false;
     }
+
+    return ok;
+}
+
+// MARK: Enterance from 'RSP' init
+void plantHooks()
+{
+    bool ok = false;
+    // Check if we are in PJ64 1.6, heuristically
+    {
+        auto addresses = Backtrace::collectStackAddresses();
+        constexpr uintptr_t PJ64GetDllInfoSym = 0x0044dce7;
+        for (uintptr_t addr : addresses)
+        {
+            if (PJ64GetDllInfoSym == addr)
+            {
+                ok = true;
+                break;
+            }
+        }
+    } 
+
+    ok = !ok ? ok : tryNamePJ64();
 
     if (ok)
     {

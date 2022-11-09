@@ -171,20 +171,26 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="backtrace.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="hooks.cpp" />
+    <ClCompile Include="memunz.cpp" />
     <ClCompile Include="minizip.cpp" />
     <ClCompile Include="reset_recognizer.cpp" />
     <ClCompile Include="timer.cpp" />
+    <ClCompile Include="unzdispatch.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="backtrace.h" />
     <ClInclude Include="hooks.h" />
     <ClInclude Include="hooks_priv.h" />
+    <ClInclude Include="memunz.h" />
     <ClInclude Include="minizip.h" />
     <ClInclude Include="pj64_globals.h" />
     <ClInclude Include="reset_recognizer.h" />
     <ClInclude Include="Rsp #1.1.h" />
     <ClInclude Include="timer.h" />
+    <ClInclude Include="unzdispatch.h" />
     <ClInclude Include="xmacro.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

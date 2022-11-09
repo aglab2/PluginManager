@@ -1,21 +1,16 @@
 #pragma once
 
-#ifndef ZEXPORT
-#define ZEXPORT __cdecl
-#endif
+#include "unzdispatch.h"
 
-typedef unsigned int   uInt;  /* 16 bits or more */
-typedef unsigned long  uLong; /* 32 bits or more */
+#include <stdint.h>
 
-// MARK: Constants
+#if 0
+// MARK: ZIP
 #define ZIP_OK                                  (0)
 #define ZIP_ERRNO               (-1)
 #define ZIP_PARAMERROR                  (-102)
 #define ZIP_INTERNALERROR               (-104)
 
-#define UNZ_PARAMERROR                  (-102)
-
-// MARK: ZIP
 typedef void* zipFile;
 
 /* tm_zip contain date/time info */
@@ -44,9 +39,20 @@ int ZEXPORT zipOpenNewFileInZip(zipFile file, const char* filename, const zip_fi
 int ZEXPORT zipWriteInFileInZip(zipFile file, const void* buf, unsigned len);
 int ZEXPORT zipCloseFileInZip(zipFile file);
 int ZEXPORT zipClose(zipFile file, const char* global_comment);
+#endif
 
 // MARK: UNZ
-typedef void* unzFile;
+#define UNZ_PARAMERROR                  (-102)
+
+// returns from 'unzOpen'
+typedef struct mz_compat_s {
+    unzDispatchVTable _vtable;
+    void* stream;
+    void* handle;
+    uint64_t entry_index;
+    int64_t  entry_pos;
+    int64_t  total_out;
+} mz_compat;
 
 /* tm_unz contain date/time info */
 typedef struct tm_unz_s
@@ -82,6 +88,7 @@ typedef struct unz_file_info_s
 } unz_file_info;
 
 unzFile ZEXPORT unzOpen(const char* path);
+int unzCtor(unzFile file, const char* path);
 int ZEXPORT unzOpenCurrentFile(unzFile file);
 int ZEXPORT unzGoToFirstFile(unzFile file);
 int ZEXPORT unzLocateFile(unzFile file, const char* szFileName, int iCaseSensitivity);

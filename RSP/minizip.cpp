@@ -8,16 +8,11 @@
 #include "mz_strm_zlib.h"
 #include "mz_zip.h"
 
+#include "unzdispatch.h"
+
 #include <stdio.h> /* SEEK */
 
-typedef struct mz_compat_s {
-    void* stream;
-    void* handle;
-    uint64_t entry_index;
-    int64_t  entry_pos;
-    int64_t  total_out;
-} mz_compat;
-
+#if 0
 static int32_t zipConvertAppendToStreamMode(int append) {
     int32_t mode = MZ_OPEN_MODE_WRITE;
     if (!append) {
@@ -214,6 +209,7 @@ int ZEXPORT zipClose(zipFile file, const char* global_comment) {
 
     return err;
 }
+#endif
 
 static unzFile unzOpen_MZ(void* stream) {
     mz_compat* compat = NULL;
@@ -242,14 +238,32 @@ static unzFile unzOpen_MZ(void* stream) {
     return (unzFile)compat;
 }
 
+static int unzCtor_MZ(unzFile file, void* stream) {
+    mz_compat* compat = (mz_compat*) file;
+    int32_t err = MZ_OK;
+    void* handle = NULL;
+
+    mz_zip_create(&handle);
+    err = mz_zip_open(handle, stream, MZ_OPEN_MODE_READ);
+
+    if (err != MZ_OK) {
+        mz_zip_delete(&handle);
+        return UNZ_PARAMERROR;
+    }
+
+    compat->handle = handle;
+    compat->stream = stream;
+
+    mz_zip_goto_first_entry(compat->handle);
+    return 0;
+}
+
 unzFile ZEXPORT unzOpen(const char* path) {
     unzFile unz = NULL;
     void* stream = NULL;
 
-    if (stream == NULL) {
-        if (mz_stream_os_create(&stream) == NULL)
-            return NULL;
-    }
+    if (mz_stream_os_create(&stream) == NULL)
+        return NULL;
 
     if (mz_stream_open(stream, path, MZ_OPEN_MODE_READ) != MZ_OK) {
         mz_stream_delete(&stream);
@@ -263,6 +277,27 @@ unzFile ZEXPORT unzOpen(const char* path) {
         return NULL;
     }
     return unz;
+}
+
+int unzCtor(unzFile file, const char* path)
+{
+    void* stream = NULL;
+
+    if (mz_stream_os_create(&stream) == NULL)
+        return UNZ_PARAMERROR;
+
+    if (mz_stream_open(stream, path, MZ_OPEN_MODE_READ) != MZ_OK) {
+        mz_stream_delete(&stream);
+        return UNZ_PARAMERROR;
+    }
+
+    int err = unzCtor_MZ(file, stream);
+    if (err) {
+        mz_stream_close(stream);
+        mz_stream_delete(&stream);
+        return err;
+    }
+    return 0;
 }
 
 int ZEXPORT unzOpenCurrentFile(unzFile file) {
