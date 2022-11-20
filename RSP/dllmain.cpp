@@ -71,7 +71,7 @@ static void loadRSP()
     }
 }
 
-#define LOAD_RSP() if (!gRSP) loadRSP();
+#define LOAD_RSP() if (!gRSP) { loadRSP(); }
 
 EXPORT void CALL CloseDLL(void) { LOAD_RSP(); gCloseDLL(); }
 EXPORT void CALL DllAbout(HWND hParent) { LOAD_RSP(); gDllAbout(hParent); }

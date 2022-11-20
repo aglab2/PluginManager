@@ -407,10 +407,11 @@ void plantHooks()
     // Check if we are in PJ64 1.6, heuristically
     {
         auto addresses = Backtrace::collectStackAddresses();
-        constexpr uintptr_t PJ64GetDllInfoSym = 0x0044dce7;
+        constexpr uintptr_t PJ64GetDllInfoSym0 = 0x0044dce7;
+        constexpr uintptr_t PJ64GetDllInfoSym1 = 0x0044dcf7;
         for (uintptr_t addr : addresses)
         {
-            if (PJ64GetDllInfoSym == addr)
+            if (PJ64GetDllInfoSym0 == addr || PJ64GetDllInfoSym1 == addr)
             {
                 ok = true;
                 break;
