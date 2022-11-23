@@ -299,6 +299,11 @@ void HookManager::init()
     writeJump(0x0041A520, 5, unzDispatchClose);
     writeJump(0x0041AF30, 5, unzDispatchGoToNextFile);
 #endif
+
+    // CF1 by default
+    // 004492FA C7 05 E0 75 4D 00 02 00 00 00 mov         dword ptr ds:[4D75E0h],2 
+    unprotect((void*)0x449300, 1);
+    *(uint8_t*) 0x449300 = 1;
 }
 
 #define INVOKE_PJ64_PLUGIN_CALLBACK(name) if (auto fn = PJ64::Globals::name()) { fn(); }
